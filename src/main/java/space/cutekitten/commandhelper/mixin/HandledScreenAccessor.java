@@ -1,7 +1,7 @@
 package space.cutekitten.commandhelper.mixin;
 
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.screen.ScreenHandler;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -12,4 +12,7 @@ public interface HandledScreenAccessor {
 
     @Accessor("y")
     int getY();
+
+    @Accessor("handler")
+    ScreenHandler getHandler();
 }

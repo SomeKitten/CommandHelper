@@ -1,5 +1,6 @@
 package space.cutekitten.commandhelper.mixin;
 
+import com.google.common.collect.ImmutableList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -10,6 +11,7 @@ import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 @Mixin(CreativeInventoryScreen.class)
 public abstract class CreativeInventoryScreenMixin {
@@ -38,6 +39,8 @@ public abstract class CreativeInventoryScreenMixin {
     @Shadow private TextFieldWidget searchBox;
 
     @Shadow protected abstract void search();
+
+    @Shadow private float scrollPosition;
 
     @Inject(method = "render", at = @At("RETURN"))
     private void render(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci) {
@@ -61,18 +64,24 @@ public abstract class CreativeInventoryScreenMixin {
     @Inject(method = "setSelectedTab", at = @At("RETURN"))
     private void setSelectedTab(ItemGroup group, CallbackInfo ci) {
         HandledScreenAccessor accessor = (HandledScreenAccessor) this;
+        CreativeInventoryScreen.CreativeScreenHandler handler =
+                (CreativeInventoryScreen.CreativeScreenHandler)accessor.getHandler();
+
+//        if switching to non-score tab
         if (group.getIndex() != CommandHelper.ITEM_GROUP.getIndex()) {
-            searchBox.x = accessor.getX() + 82;
-            searchBox.setWidth(80);
-        } else {
-            searchBox.x = accessor.getX() + 112;
-            searchBox.setWidth(50);
+            if (this.slots != null) {
+                handler.slots.clear();
+                handler.slots.addAll(this.slots);
+            }
+
+            return;
         }
 
         if (ClientDB.client.player == null) return;
 
-        CreativeInventoryScreen.CreativeScreenHandler handler =
-                (CreativeInventoryScreen.CreativeScreenHandler) ClientDB.client.player.currentScreenHandler;
+        if (this.slots == null) {
+            this.slots = ImmutableList.copyOf(handler.slots);
+        }
 
         handler.itemList.clear();
         handler.slots.clear();
@@ -112,7 +121,6 @@ public abstract class CreativeInventoryScreenMixin {
 
             Scoreboard scoreboard = server.getScoreboard();
 
-            List<ScoreboardPlayerScore> oldScores = ClientDB.scores;
             ClientDB.scores = new ArrayList<>();
 
             for (ScoreboardObjective objective : scoreboard.getObjectives()) {
@@ -129,6 +137,7 @@ public abstract class CreativeInventoryScreenMixin {
                 return;
             }
 
+//            hopefully faster sorting than just sorting the whole list at once
             HashMap<Character, List<ScoreboardPlayerScore>> scoreByFirstChar = new HashMap<>();
             for (ScoreboardPlayerScore score : ClientDB.scores) {
                 char firstChar = score.getPlayerName().charAt(0);
@@ -152,5 +161,17 @@ public abstract class CreativeInventoryScreenMixin {
                 ClientDB.scores.addAll(sortedScores);
             }
         }
+    }
+
+    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
+    private void mouseScrolled(double mouseX, double mouseY, double amount, CallbackInfoReturnable<Boolean> cir) {
+        if (selectedTab != CommandHelper.ITEM_GROUP.getIndex()) return;
+        if (ClientDB.client.player == null) return;
+
+//        scroll 5 items at once
+        float f = (float)(amount*4 / (double)ClientDB.scores.size());
+        this.scrollPosition = MathHelper.clamp(this.scrollPosition - f, 0.0F, 1.0F);
+        ((CreativeInventoryScreen.CreativeScreenHandler)ClientDB.client.player.currentScreenHandler).scrollItems(this.scrollPosition);
+        cir.setReturnValue(true);
     }
 }
