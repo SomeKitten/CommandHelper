@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "commandhelper",
+  "version": "${version}",
+  "name": "CommandHelper",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/commandhelper/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "space.cutekitten.commandhelper.client.CommandhelperClient"
+    ],
+    "main": [
+      "space.cutekitten.commandhelper.CommandHelper"
+    ]
+  },
+  "mixins": [
+    "commandhelper.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.9",
+    "fabric": "*",
+    "minecraft": "1.19.2"
+  }
+}
