@@ -11,6 +11,7 @@ import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -50,9 +51,26 @@ public abstract class CreativeInventoryScreenMixin {
 
         if (client.world == null) return;
 
+        CreativeInventoryScreen screen = (CreativeInventoryScreen) (Object) this;
+
         for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
             ScoreboardPlayerScore score = ClientDB.showScores.get(i);
-            ScoreboardRenderer.renderScore((CreativeInventoryScreen) (Object) this, matrices, score, i);
+            ScoreboardRenderer.renderScore(screen, matrices, score, i);
+        }
+
+        for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
+            ScoreboardPlayerScore score = ClientDB.showScores.get(i);
+
+            if (((HandledScreenAccessor)this).invokeIsPointWithinBounds(
+                    9,
+                    18 + 18 * i,
+                    18*9, 16, mouseX, mouseY)) {
+                screen.renderTooltip(matrices, List.of(
+                        Text.of(score.getObjective().getName()),
+                        Text.of(score.getPlayerName()),
+                        Text.of(score.getScore() + "")
+                ), mouseX, mouseY);
+            }
         }
     }
 
