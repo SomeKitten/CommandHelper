@@ -55,7 +55,7 @@ public abstract class CreativeInventoryScreenMixin {
 
         for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
             ScoreboardPlayerScore score = ClientDB.showScores.get(i);
-            ScoreboardRenderer.renderScore(screen, matrices, score, i);
+            ScoreboardRenderer.renderScore(screen, matrices, score, i, ClientDB.pinnedScores.contains(score));
         }
 
         for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
@@ -156,14 +156,28 @@ public abstract class CreativeInventoryScreenMixin {
                 }
             }
 
-//            don't sort if the amount of scores is too high!!!
+            Collator collator = Collator.getInstance(Locale.ROOT);
+            ClientDB.pinnedScores.sort((score1, score2) -> {
+                String score1Name = score1.getPlayerName();
+                String score2Name = score2.getPlayerName();
+                return collator.compare(score1Name, score2Name);
+            });
+            List<ScoreboardPlayerScore> sortedPins =
+                    ClientDB.pinnedScores.stream().filter(score ->
+                            score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList();
+
+//            if the amount of scores is too high
             if (ClientDB.scores.size() > 10000) {
+                ClientDB.scores.removeAll(sortedPins);
+                ClientDB.scores.addAll(0, sortedPins);
                 return;
             }
 
 //            hopefully faster sorting than just sorting the whole list at once
             HashMap<Character, List<ScoreboardPlayerScore>> scoreByFirstChar = new HashMap<>();
             for (ScoreboardPlayerScore score : ClientDB.scores) {
+                if (sortedPins.contains(score)) continue;
+
                 char firstChar = score.getPlayerName().charAt(0);
                 if (!scoreByFirstChar.containsKey(firstChar)) {
                     scoreByFirstChar.put(firstChar, new ArrayList<>());
@@ -172,8 +186,8 @@ public abstract class CreativeInventoryScreenMixin {
             }
 
             ClientDB.scores.clear();
+            ClientDB.scores.addAll(sortedPins);
 
-            Collator collator = Collator.getInstance(Locale.ROOT);
             for (char key : scoreByFirstChar.keySet().stream().sorted().toList()) {
                 List<ScoreboardPlayerScore> sortedScores = scoreByFirstChar.get(key);
                 sortedScores.sort((score1, score2) -> {
@@ -197,5 +211,29 @@ public abstract class CreativeInventoryScreenMixin {
         this.scrollPosition = MathHelper.clamp(this.scrollPosition - f, 0.0F, 1.0F);
         ((CreativeInventoryScreen.CreativeScreenHandler)ClientDB.client.player.currentScreenHandler).scrollItems(this.scrollPosition);
         cir.setReturnValue(true);
+    }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"))
+    private void onMouseClick(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
+        if (selectedTab != CommandHelper.ITEM_GROUP.getIndex()) return;
+        if (ClientDB.client.player == null) return;
+        if (button != 0) return;
+
+        for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
+            ScoreboardPlayerScore score = ClientDB.showScores.get(i);
+
+            if (((HandledScreenAccessor)this).invokeIsPointWithinBounds(
+                    9,
+                    18 + 18 * i,
+                    18*9, 16, mouseX, mouseY)) {
+                if (ClientDB.pinnedScores.contains(score)) {
+                    ClientDB.pinnedScores.remove(score);
+                } else {
+                    ClientDB.pinnedScores.add(score);
+                }
+
+                this.search();
+            }
+        }
     }
 }

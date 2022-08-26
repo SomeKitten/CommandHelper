@@ -10,16 +10,21 @@ import net.minecraft.util.math.Matrix4f;
 import space.cutekitten.commandhelper.mixin.HandledScreenAccessor;
 
 public class ScoreboardRenderer {
-    public static void renderScore(CreativeInventoryScreen screen, MatrixStack matrices, ScoreboardPlayerScore score, int index) {
+    public static void renderScore(CreativeInventoryScreen screen, MatrixStack matrices,
+                                   ScoreboardPlayerScore score, int index, boolean pinned) {
         TextRenderer textRenderer = ClientDB.client.textRenderer;
 
         int x = ((HandledScreenAccessor) screen).getX() + 9;
         int y = ((HandledScreenAccessor) screen).getY() + 18 + index * 18;
 
+        int colour = 0xFFFFFFFF;
+        if (pinned) {
+            colour = 0xFFFFFF00; // yellow
+        }
 //        main background
         fill(matrices.peek().getPositionMatrix(),
                 x - 1, y - 1, x + 18 * 9 - 2 + 1, y + 18 - 2 + 1, // rect bounds
-                0xFFFFFFFF, // argb color
+                colour, // argb color
                 screen.getZOffset());
         fill(matrices.peek().getPositionMatrix(),
                 x, y, x + 18 * 9 - 2, y + 18 - 2, // rect bounds

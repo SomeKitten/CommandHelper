@@ -20,10 +20,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import space.cutekitten.commandhelper.client.ClientDB;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static net.minecraft.client.gui.DrawableHelper.fill;
 
@@ -53,6 +50,8 @@ public abstract class InGameHudMixin {
         while (list.size() > 15) {
             list.remove(list.size() - 1);
         }
+
+        Collections.reverse(list);
 
         List<Pair<ScoreboardPlayerScore, Text>> list2 = Lists.newArrayListWithCapacity(list.size());
         Text text = Text.of(ClientDB.currentSearch);
@@ -92,7 +91,8 @@ public abstract class InGameHudMixin {
             int var10001 = o - 2;
             Objects.requireNonNull(this.getTextRenderer());
             fill(matrices, var10001, t, u, t + 9, q);
-            this.getTextRenderer().draw(matrices, text3, (float) o, (float) t, -1);
+            this.getTextRenderer().draw(matrices, text3, (float) o, (float) t,
+                    ClientDB.pinnedScores.contains(scoreboardPlayerScore2) ? 0xFFFFFF00 : 0xFFFFFFFF);
             this.getTextRenderer().draw(matrices, string, (float) (u - this.getTextRenderer().getWidth(string)), (float) t, -1);
             if (p == list.size()) {
                 var10001 = o - 2;
