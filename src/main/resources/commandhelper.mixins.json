@@ -10,7 +10,8 @@
     "CreativeInventoryScreenAccessor",
     "CreativeInventoryScreenMixin",
     "CreativeScreenHandlerMixin",
-    "HandledScreenAccessor"
+    "HandledScreenAccessor",
+    "InGameHudMixin"
   ],
   "injectors": {
     "defaultRequire": 1

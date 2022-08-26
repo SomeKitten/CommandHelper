@@ -67,6 +67,10 @@ public abstract class CreativeInventoryScreenMixin {
         CreativeInventoryScreen.CreativeScreenHandler handler =
                 (CreativeInventoryScreen.CreativeScreenHandler)accessor.getHandler();
 
+        if (group.getIndex() == ItemGroup.INVENTORY.getIndex()) {
+            return;
+        }
+
 //        if switching to non-score tab
         if (group.getIndex() != CommandHelper.ITEM_GROUP.getIndex()) {
             if (this.slots != null) {
@@ -89,7 +93,7 @@ public abstract class CreativeInventoryScreenMixin {
         this.searchBox.setVisible(true);
         this.searchBox.setFocusUnlocked(false);
         this.searchBox.setTextFieldFocused(true);
-        this.searchBox.setText("");
+        this.searchBox.setText(ClientDB.currentSearch);
         this.search();
     }
 
@@ -115,7 +119,9 @@ public abstract class CreativeInventoryScreenMixin {
     @Inject(method = "search", at = @At("HEAD"))
     private void search(CallbackInfo ci) {
         if (selectedTab == CommandHelper.ITEM_GROUP.getIndex()) {
-            String searched = searchBox.getText().toLowerCase(Locale.ROOT);
+            ClientDB.currentSearch = searchBox.getText();
+            String searched = ClientDB.currentSearch.toLowerCase(Locale.ROOT);
+
             MinecraftServer server = ClientDB.client.getServer();
             if (server == null) return;
 
