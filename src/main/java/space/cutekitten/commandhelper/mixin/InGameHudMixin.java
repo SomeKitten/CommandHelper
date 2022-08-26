@@ -37,9 +37,16 @@ public abstract class InGameHudMixin {
 
     @Shadow @Final private MinecraftClient client;
 
-//    adapted from InGameHud.renderScoreboardSidebar
+    @Shadow protected abstract void renderScoreboardSidebar(MatrixStack matrices, ScoreboardObjective objective);
+
+    //    adapted from InGameHud.renderScoreboardSidebar
     @Redirect(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/InGameHud;renderScoreboardSidebar(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/scoreboard/ScoreboardObjective;)V"))
-    private void renderScoreboardSidebar(InGameHud instance, MatrixStack matrices, ScoreboardObjective objective) {
+    private void customRenderScoreboardSidebar(InGameHud instance, MatrixStack matrices, ScoreboardObjective objective) {
+        if (!ClientDB.customScoreboardActive) {
+            this.renderScoreboardSidebar(matrices, objective);
+            return;
+        }
+
         Scoreboard scoreboard = objective.getScoreboard();
         List<ScoreboardPlayerScore> list = new ArrayList<>(ClientDB.scores);
 

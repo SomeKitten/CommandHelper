@@ -11,4 +11,5 @@ public class ClientDB {
     public static List<ScoreboardPlayerScore> scores = new ArrayList<>();
     public static List<ScoreboardPlayerScore> showScores = new ArrayList<>();
     public static String currentSearch = "";
+    public static boolean customScoreboardActive = true;
 }
