@@ -7,7 +7,6 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.MinecraftServer;
@@ -25,11 +24,7 @@ import space.cutekitten.commandhelper.CommandHelper;
 import space.cutekitten.commandhelper.client.ClientDB;
 import space.cutekitten.commandhelper.client.ScoreboardRenderer;
 
-import java.text.Collator;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 @Mixin(CreativeInventoryScreen.class)
 public abstract class CreativeInventoryScreenMixin {
@@ -136,69 +131,21 @@ public abstract class CreativeInventoryScreenMixin {
 
     @Inject(method = "search", at = @At("HEAD"))
     private void search(CallbackInfo ci) {
-        if (selectedTab == CommandHelper.ITEM_GROUP.getIndex()) {
-            ClientDB.currentSearch = searchBox.getText();
-            String searched = ClientDB.currentSearch.toLowerCase(Locale.ROOT);
+        if (selectedTab != CommandHelper.ITEM_GROUP.getIndex()) return;
 
-            MinecraftServer server = ClientDB.client.getServer();
-            if (server == null) return;
+        ClientDB.currentSearch = searchBox.getText();
 
-            Scoreboard scoreboard = server.getScoreboard();
+        Scoreboard scoreboard;
 
-            ClientDB.scores = new ArrayList<>();
-
-            for (ScoreboardObjective objective : scoreboard.getObjectives()) {
-                try {
-                    ClientDB.scores.addAll(scoreboard.getAllPlayerScores(objective).stream().filter(
-                            score -> score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList());
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            Collator collator = Collator.getInstance(Locale.ROOT);
-            ClientDB.pinnedScores.sort((score1, score2) -> {
-                String score1Name = score1.getPlayerName();
-                String score2Name = score2.getPlayerName();
-                return collator.compare(score1Name, score2Name);
-            });
-            List<ScoreboardPlayerScore> sortedPins =
-                    ClientDB.pinnedScores.stream().filter(score ->
-                            score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList();
-
-//            if the amount of scores is too high
-            if (ClientDB.scores.size() > 10000) {
-                ClientDB.scores.removeAll(sortedPins);
-                ClientDB.scores.addAll(0, sortedPins);
-                return;
-            }
-
-//            hopefully faster sorting than just sorting the whole list at once
-            HashMap<Character, List<ScoreboardPlayerScore>> scoreByFirstChar = new HashMap<>();
-            for (ScoreboardPlayerScore score : ClientDB.scores) {
-                if (sortedPins.contains(score)) continue;
-
-                char firstChar = score.getPlayerName().charAt(0);
-                if (!scoreByFirstChar.containsKey(firstChar)) {
-                    scoreByFirstChar.put(firstChar, new ArrayList<>());
-                }
-                scoreByFirstChar.get(firstChar).add(score);
-            }
-
-            ClientDB.scores.clear();
-            ClientDB.scores.addAll(sortedPins);
-
-            for (char key : scoreByFirstChar.keySet().stream().sorted().toList()) {
-                List<ScoreboardPlayerScore> sortedScores = scoreByFirstChar.get(key);
-                sortedScores.sort((score1, score2) -> {
-                    String score1Name = score1.getPlayerName();
-                    String score2Name = score2.getPlayerName();
-                    return collator.compare(score1Name, score2Name);
-                });
-
-                ClientDB.scores.addAll(sortedScores);
-            }
+        MinecraftServer server = ClientDB.client.getServer();
+        if (server != null) {
+            scoreboard = server.getScoreboard();
+        } else {
+            if (ClientDB.client.world == null) return;
+            scoreboard = ClientDB.client.world.getScoreboard();
         }
+
+        ScoreboardRenderer.updateScoreboard(scoreboard);
     }
 
     @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)

@@ -5,9 +5,17 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.util.math.Matrix4f;
 import space.cutekitten.commandhelper.mixin.HandledScreenAccessor;
+
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 public class ScoreboardRenderer {
     public static void renderScore(CreativeInventoryScreen screen, MatrixStack matrices,
@@ -87,5 +95,63 @@ public class ScoreboardRenderer {
         BufferRenderer.drawWithShader(bufferBuilder.end());
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+    }
+
+    public static void updateScoreboard(Scoreboard scoreboard) {
+        String searched = ClientDB.currentSearch.toLowerCase(Locale.ROOT);
+
+        ClientDB.scores = new ArrayList<>();
+
+        for (ScoreboardObjective objective : scoreboard.getObjectives()) {
+            try {
+                ClientDB.scores.addAll(scoreboard.getAllPlayerScores(objective).stream().filter(
+                        score -> score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList());
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+        }
+
+        Collator collator = Collator.getInstance(Locale.ROOT);
+        ClientDB.pinnedScores.sort((score1, score2) -> {
+            String score1Name = score1.getPlayerName();
+            String score2Name = score2.getPlayerName();
+            return collator.compare(score1Name, score2Name);
+        });
+        List<ScoreboardPlayerScore> sortedPins =
+                ClientDB.pinnedScores.stream().filter(score ->
+                        score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList();
+
+//        if the amount of scores is too high
+        if (ClientDB.scores.size() > 10000) {
+            ClientDB.scores.removeAll(sortedPins);
+            ClientDB.scores.addAll(0, sortedPins);
+            return;
+        }
+
+//        hopefully faster sorting than just sorting the whole list at once
+        HashMap<Character, List<ScoreboardPlayerScore>> scoreByFirstChar = new HashMap<>();
+        for (ScoreboardPlayerScore score : ClientDB.scores) {
+            if (sortedPins.contains(score)) continue;
+
+            char firstChar = score.getPlayerName().charAt(0);
+            if (!scoreByFirstChar.containsKey(firstChar)) {
+                scoreByFirstChar.put(firstChar, new ArrayList<>());
+            }
+            scoreByFirstChar.get(firstChar).add(score);
+        }
+
+        ClientDB.scores.clear();
+        ClientDB.scores.addAll(sortedPins);
+
+        for (char key : scoreByFirstChar.keySet().stream().sorted().toList()) {
+            List<ScoreboardPlayerScore> sortedScores = scoreByFirstChar.get(key);
+            sortedScores.sort((score1, score2) -> {
+                String score1Name = score1.getPlayerName();
+                String score2Name = score2.getPlayerName();
+                return collator.compare(score1Name, score2Name);
+            });
+
+            ClientDB.scores.addAll(sortedScores);
+        }
     }
 }
