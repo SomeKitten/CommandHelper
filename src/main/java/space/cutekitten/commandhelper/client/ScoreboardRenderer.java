@@ -168,12 +168,9 @@ public class ScoreboardRenderer {
 
     public static void renderCustomScoreboard(InGameHud instance, int scaledWidth, int scaledHeight, MatrixStack matrices, ScoreboardObjective objective) {
         Scoreboard scoreboard = objective.getScoreboard();
-        List<ScoreboardPlayerScore> list = new ArrayList<>(ClientDB.scores);
 
-        while (list.size() > 15) {
-            list.remove(list.size() - 1);
-        }
-
+        List<ScoreboardPlayerScore> list =
+                new ArrayList<>(ClientDB.scores.subList(0, Math.min(ClientDB.scores.size(), 24)));
         Collections.reverse(list);
 
         List<Pair<ScoreboardPlayerScore, Text>> list2 = Lists.newArrayListWithCapacity(list.size());
@@ -196,7 +193,7 @@ public class ScoreboardRenderer {
         int var10000 = list.size();
         Objects.requireNonNull(instance.getTextRenderer());
         int l = var10000 * 9;
-        int m = scaledHeight / 2 + l / 3;
+        int m = scaledHeight / 2 + l / 2;
         int o = scaledWidth - j - 3;
         int p = 0;
         int q = ClientDB.client.options.getTextBackgroundColor(0.3F);
