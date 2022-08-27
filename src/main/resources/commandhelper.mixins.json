@@ -4,6 +4,7 @@
   "package": "space.cutekitten.commandhelper.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "MinecraftServerMixin",
     "ScoreboardMixin"
   ],
   "client": [

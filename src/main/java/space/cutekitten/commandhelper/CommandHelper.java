@@ -8,9 +8,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
 public class CommandHelper implements ModInitializer {
+    public static final ItemStack iconStack = new ItemStack(Blocks.COMMAND_BLOCK, 69);
     public static final ItemGroup ITEM_GROUP = FabricItemGroupBuilder.build(
             new Identifier("commandhelper", "scoreboard"),
-            () -> new ItemStack(Blocks.COMMAND_BLOCK, 69)).setTexture("item_search.png");
+            () -> iconStack).setTexture("item_search.png");
 
     @Override
     public void onInitialize() {

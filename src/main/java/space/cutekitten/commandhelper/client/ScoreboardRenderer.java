@@ -1,21 +1,26 @@
 package space.cutekitten.commandhelper.client;
 
+import com.google.common.collect.Lists;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
+import net.minecraft.scoreboard.Team;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Matrix4f;
+import space.cutekitten.commandhelper.CommandHelper;
 import space.cutekitten.commandhelper.mixin.HandledScreenAccessor;
 
 import java.text.Collator;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 public class ScoreboardRenderer {
     public static void renderScore(CreativeInventoryScreen screen, MatrixStack matrices,
@@ -119,19 +124,23 @@ public class ScoreboardRenderer {
         });
         List<ScoreboardPlayerScore> sortedPins =
                 ClientDB.pinnedScores.stream().filter(score ->
-                        score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList();
+                        ClientDB.scores.contains(score) &&
+                                score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList();
 
 //        if the amount of scores is too high
         if (ClientDB.scores.size() > 10000) {
             ClientDB.scores.removeAll(sortedPins);
             ClientDB.scores.addAll(0, sortedPins);
+
+            CommandHelper.iconStack.setCount(ClientDB.scores.size());
+
             return;
         }
 
 //        hopefully faster sorting than just sorting the whole list at once
         HashMap<Character, List<ScoreboardPlayerScore>> scoreByFirstChar = new HashMap<>();
         for (ScoreboardPlayerScore score : ClientDB.scores) {
-            if (sortedPins.contains(score)) continue;
+            if (ClientDB.pinnedScores.contains(score)) continue;
 
             char firstChar = score.getPlayerName().charAt(0);
             if (!scoreByFirstChar.containsKey(firstChar)) {
@@ -152,6 +161,72 @@ public class ScoreboardRenderer {
             });
 
             ClientDB.scores.addAll(sortedScores);
+        }
+
+        CommandHelper.iconStack.setCount(Math.max(ClientDB.scores.size(), 1));
+    }
+
+    public static void renderCustomScoreboard(InGameHud instance, int scaledWidth, int scaledHeight, MatrixStack matrices, ScoreboardObjective objective) {
+        Scoreboard scoreboard = objective.getScoreboard();
+        List<ScoreboardPlayerScore> list = new ArrayList<>(ClientDB.scores);
+
+        while (list.size() > 15) {
+            list.remove(list.size() - 1);
+        }
+
+        Collections.reverse(list);
+
+        List<Pair<ScoreboardPlayerScore, Text>> list2 = Lists.newArrayListWithCapacity(list.size());
+        Text text = Text.of(ClientDB.currentSearch);
+        int i = instance.getTextRenderer().getWidth(text);
+        int j = i;
+        int k = instance.getTextRenderer().getWidth(": ");
+
+        ScoreboardPlayerScore scoreboardPlayerScore;
+        MutableText text2;
+        for(Iterator<ScoreboardPlayerScore> var11 = list.iterator();
+            var11.hasNext(); j = Math.max(j, instance.getTextRenderer().getWidth(text2) + k +
+                instance.getTextRenderer().getWidth(Integer.toString(scoreboardPlayerScore.getScore())))) {
+            scoreboardPlayerScore = var11.next();
+            Team team = scoreboard.getPlayerTeam(scoreboardPlayerScore.getPlayerName());
+            text2 = Team.decorateName(team, Text.literal(scoreboardPlayerScore.getPlayerName()));
+            list2.add(Pair.of(scoreboardPlayerScore, text2));
+        }
+
+        int var10000 = list.size();
+        Objects.requireNonNull(instance.getTextRenderer());
+        int l = var10000 * 9;
+        int m = scaledHeight / 2 + l / 3;
+        int o = scaledWidth - j - 3;
+        int p = 0;
+        int q = ClientDB.client.options.getTextBackgroundColor(0.3F);
+        int r = ClientDB.client.options.getTextBackgroundColor(0.4F);
+
+        for (Pair<ScoreboardPlayerScore, Text> pair : list2) {
+            ++p;
+            ScoreboardPlayerScore scoreboardPlayerScore2 = pair.getFirst();
+            Text text3 = pair.getSecond();
+            Formatting var31 = Formatting.RED;
+            String string = "" + var31 + scoreboardPlayerScore2.getScore();
+            Objects.requireNonNull(instance.getTextRenderer());
+            int t = m - p * 9;
+            int u = scaledWidth - 3 + 2;
+            int var10001 = o - 2;
+            Objects.requireNonNull(instance.getTextRenderer());
+            InGameHud.fill(matrices, var10001, t, u, t + 9, q);
+            instance.getTextRenderer().draw(matrices, text3, (float) o, (float) t,
+                    ClientDB.pinnedScores.contains(scoreboardPlayerScore2) ? 0xFFFFFF00 : 0xFFFFFFFF);
+            instance.getTextRenderer().draw(matrices, string, (float) (u - instance.getTextRenderer().getWidth(string)), (float) t, -1);
+            if (p == list.size()) {
+                var10001 = o - 2;
+                Objects.requireNonNull(instance.getTextRenderer());
+                InGameHud.fill(matrices, var10001, t - 9 - 1, u, t - 1, r);
+                InGameHud.fill(matrices, o - 2, t - 1, u, t, q);
+                TextRenderer var32 = instance.getTextRenderer();
+                float var10003 = (float) (o + j / 2 - i / 2);
+                Objects.requireNonNull(instance.getTextRenderer());
+                var32.draw(matrices, text, var10003, (float) (t - 9), -1);
+            }
         }
     }
 }
