@@ -22,6 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import space.cutekitten.commandhelper.CommandHelper;
 import space.cutekitten.commandhelper.client.ClientDB;
+import space.cutekitten.commandhelper.client.PinnedScore;
 import space.cutekitten.commandhelper.client.ScoreboardRenderer;
 
 import java.util.List;
@@ -50,7 +51,7 @@ public abstract class CreativeInventoryScreenMixin {
 
         for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
             ScoreboardPlayerScore score = ClientDB.showScores.get(i);
-            ScoreboardRenderer.renderScore(screen, matrices, score, i, ClientDB.pinnedScores.contains(score));
+            ScoreboardRenderer.renderScore(screen, matrices, score, i, PinnedScore.containsScore(ClientDB.pinnedScores, score).size() > 0);
         }
 
         for (int i = 0; i < Math.min(ClientDB.showScores.size(), 5); i++) {
@@ -173,10 +174,13 @@ public abstract class CreativeInventoryScreenMixin {
                     9,
                     18 + 18 * i,
                     18*9, 16, mouseX, mouseY)) {
-                if (ClientDB.pinnedScores.contains(score)) {
-                    ClientDB.pinnedScores.remove(score);
+
+//                filter pins to only ones that match the score
+                List<PinnedScore> pinnedScores = PinnedScore.containsScore(ClientDB.pinnedScores, score);
+                if (pinnedScores.size() > 0) {
+                    ClientDB.pinnedScores.removeAll(pinnedScores);
                 } else {
-                    ClientDB.pinnedScores.add(score);
+                    ClientDB.pinnedScores.add(new PinnedScore(score));
                 }
 
                 this.search();

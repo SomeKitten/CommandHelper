@@ -116,17 +116,10 @@ public class ScoreboardRenderer {
             }
         }
 
-        Collator collator = Collator.getInstance(Locale.ROOT);
-        ClientDB.pinnedScores.sort((score1, score2) -> {
-            String score1Name = score1.getPlayerName();
-            String score2Name = score2.getPlayerName();
-            return collator.compare(score1Name, score2Name);
-        });
-        List<ScoreboardPlayerScore> sortedPins =
-                ClientDB.pinnedScores.stream().filter(score ->
-                        ClientDB.scores.contains(score) &&
-                                score.getPlayerName().toLowerCase(Locale.ROOT).contains(searched)).toList();
+//        convert to ScoreboardPlayerScore list
+        List<ScoreboardPlayerScore> sortedPins = PinnedScore.toScoreboardPlayerScores(scoreboard, ClientDB.pinnedScores, searched);
 
+        Collator collator = Collator.getInstance(Locale.ROOT);
 //        if the amount of scores is too high
         if (ClientDB.scores.size() > 10000) {
             ClientDB.scores.removeAll(sortedPins);
@@ -140,7 +133,7 @@ public class ScoreboardRenderer {
 //        hopefully faster sorting than just sorting the whole list at once
         HashMap<Character, List<ScoreboardPlayerScore>> scoreByFirstChar = new HashMap<>();
         for (ScoreboardPlayerScore score : ClientDB.scores) {
-            if (ClientDB.pinnedScores.contains(score)) continue;
+            if (sortedPins.contains(score)) continue;
 
             char firstChar = score.getPlayerName().charAt(0);
             if (!scoreByFirstChar.containsKey(firstChar)) {
@@ -212,7 +205,7 @@ public class ScoreboardRenderer {
             Objects.requireNonNull(instance.getTextRenderer());
             InGameHud.fill(matrices, var10001, t, u, t + 9, q);
             instance.getTextRenderer().draw(matrices, text3, (float) o, (float) t,
-                    ClientDB.pinnedScores.contains(scoreboardPlayerScore2) ? 0xFFFFFF00 : 0xFFFFFFFF);
+                    (PinnedScore.containsScore(ClientDB.pinnedScores, scoreboardPlayerScore2).size() > 0) ? 0xFFFFFF00 : 0xFFFFFFFF);
             instance.getTextRenderer().draw(matrices, string, (float) (u - instance.getTextRenderer().getWidth(string)), (float) t, -1);
             if (p == list.size()) {
                 var10001 = o - 2;
