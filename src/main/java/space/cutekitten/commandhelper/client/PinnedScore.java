@@ -50,6 +50,8 @@ public class PinnedScore {
     }
 
     public static NbtList toNbt(List<PinnedScore> pins) {
+        ClientDB.currentSearch = "";
+
         NbtList list = new NbtList();
 
         list.addAll(pins.stream().map(score -> {
@@ -64,6 +66,8 @@ public class PinnedScore {
     }
 
     public static void fromNbt(NbtList list, List<PinnedScore> pins) {
+        ClientDB.currentSearch = "";
+
         pins.clear();
 
         list.forEach(element -> {
