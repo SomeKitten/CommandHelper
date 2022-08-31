@@ -20,32 +20,13 @@ public class ServerPlayerEntityMixin {
 
     @Inject(method = "writeCustomDataToNbt", at = @At("RETURN"))
     public void writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        NbtList list = new NbtList();
-
-        list.addAll(ClientDB.pinnedScores.stream().map(score -> {
-            NbtCompound compound = new NbtCompound();
-            compound.putString("objective", score.objective);
-            compound.putString("player", score.player);
-
-            return compound;
-        }).toList());
-
+        NbtList list = PinnedScore.toNbt(ClientDB.pinnedScores);
         nbt.put("pinnedScores", list);
     }
 
     @Inject(method = "readCustomDataFromNbt", at = @At("RETURN"))
     public void readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
-        ClientDB.pinnedScores.clear();
-
-        NbtList list = nbt.getList("pinnedScores", 10);
-        list.forEach(element -> {
-            if (!(element instanceof NbtCompound compound)) return;
-
-            ClientDB.pinnedScores.add(new PinnedScore(
-                    compound.getString("objective"),
-                    compound.getString("player")
-            ));
-        });
+        PinnedScore.fromNbt(nbt.getList("pinnedScores", 10), ClientDB.pinnedScores);
 
         ScoreboardRenderer.updateScoreboard(this.server.getScoreboard());
     }

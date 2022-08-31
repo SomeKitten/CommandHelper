@@ -9,6 +9,8 @@
   ],
   "client": [
     "ClientPlayNetworkHandlerMixin",
+    "ClientWorldMixin",
+    "ConnectScreenMixin",
     "CreativeInventoryScreenAccessor",
     "CreativeInventoryScreenMixin",
     "CreativeScreenHandlerMixin",

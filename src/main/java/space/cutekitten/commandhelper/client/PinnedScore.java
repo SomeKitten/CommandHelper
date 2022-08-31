@@ -1,8 +1,13 @@
 package space.cutekitten.commandhelper.client;
 
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
+import net.minecraft.util.Util;
 
+import java.io.File;
 import java.text.Collator;
 import java.util.List;
 import java.util.Locale;
@@ -42,5 +47,69 @@ public class PinnedScore {
         return scores.stream().filter(
                 pinnedScore -> pinnedScore.player.equals(score.getPlayerName()) &&
                         pinnedScore.objective.equals(score.getObjective().getName())).toList();
+    }
+
+    public static NbtList toNbt(List<PinnedScore> pins) {
+        NbtList list = new NbtList();
+
+        list.addAll(pins.stream().map(score -> {
+            NbtCompound c = new NbtCompound();
+            c.putString("objective", score.objective);
+            c.putString("player", score.player);
+
+            return c;
+        }).toList());
+
+        return list;
+    }
+
+    public static void fromNbt(NbtList list, List<PinnedScore> pins) {
+        pins.clear();
+
+        list.forEach(element -> {
+            if (!(element instanceof NbtCompound compound)) return;
+
+            pins.add(new PinnedScore(
+                    compound.getString("objective"),
+                    compound.getString("player")
+            ));
+        });
+    }
+
+    public static void savePins(int serverHash, List<PinnedScore> pins) {
+        try {
+            NbtCompound compound = NbtIo.read(new File(ClientDB.client.runDirectory, "server_pins.dat"));
+            if (compound == null) compound = new NbtCompound();
+
+            NbtList list = toNbt(pins);
+
+            compound.put("" + serverHash, list);
+
+            File file = File.createTempFile("server_pins", ".dat", ClientDB.client.runDirectory);
+            NbtIo.write(compound, file);
+            File file2 = new File(ClientDB.client.runDirectory, "server_pins.dat_old");
+            File file3 = new File(ClientDB.client.runDirectory, "server_pins.dat");
+            Util.backupAndReplace(file3, file, file2);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Failed to save pins");
+        }
+    }
+
+    public static void loadPins(int serverHash, List<PinnedScore> pins) {
+        try {
+            NbtCompound compound = NbtIo.read(new File(ClientDB.client.runDirectory, "server_pins.dat"));
+
+            if (compound == null) {
+                System.out.println("Failed to load servers pins");
+                return;
+            }
+
+            fromNbt(compound.getList("" + serverHash, 10), pins);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Failed to load servers pins");
+        }
     }
 }
