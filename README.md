@@ -13,4 +13,5 @@
 - If the vanilla scoreboard is hidden, the custom scoreboard will be hidden as well
 - The custom scoreboard sidebar has more lines for more scores!
 
-![image](https://user-images.githubusercontent.com/30757547/186960569-1b46cee7-f500-4153-b8f4-ee888b0840f8.png)
+![image](https://user-images.githubusercontent.com/30757547/187741032-a5d1c639-c02d-4ece-9dfa-41e6bbe8d442.png)
+
